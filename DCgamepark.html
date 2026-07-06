@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ドットコムゲーム広場</title>
+<style>
+body{font-family:sans-serif;margin:0;background:#f2f2f2;}
+header{background:linear-gradient(90deg,#4facfe,#00f2fe);color:white;padding:20px;font-size:24px;font-weight:bold;display:flex;justify-content:space-between;align-items:center;}
+button{cursor:pointer;}
+.top-buttons{display:flex;gap:10px;}
+.container{display:flex;flex-wrap:wrap;justify-content:center;padding:20px;}
+.game-card{background:white;width:260px;margin:15px;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.1);overflow:hidden;position:relative;}
+.game-card img{width:100%;height:150px;object-fit:cover;}
+.game-info{padding:15px;}
+.game-title{font-weight:bold;margin-bottom:8px;}
+.game-desc{font-size:14px;color:#555;}
+.play-button{display:block;text-align:center;background:#4facfe;color:white;text-decoration:none;padding:10px;margin:10px;border-radius:5px;}
+.like-btn{margin:5px;background:#ff7675;color:white;border:none;padding:5px 10px;border-radius:5px;}
+.delete-btn{margin:5px;background:#d63031;color:white;border:none;padding:5px 10px;border-radius:5px;}
+.recommend-btn{position:absolute;top:10px;right:10px;background:#ffeaa7;color:#2d3436;border:none;padding:5px 8px;border-radius:5px;font-weight:bold;}
+#registerForm{display:none;padding:20px;background:white;}
+input, textarea{width:100%;margin-bottom:10px;padding:8px;}
+#searchBar{padding:10px;width:300px;margin:20px;}
+.message{text-align:center;font-size:18px;color:#555;}
+.sort-buttons{display:flex;justify-content:center;gap:10px;margin-bottom:10px;}
+</style>
+</head>
+<body>
+
+<header>
+ドットコムゲーム広場
+<div class="top-buttons">
+    <button onclick="toggleRegister()">🎮 ゲーム登録</button>
+</div>
+</header>
+
+<center>
+<input type="text" id="searchBar" placeholder="ゲームを検索..." oninput="searchGame()">
+<div class="sort-buttons">
+    <button onclick="sortByLikes()">🏆 ランキング順</button>
+    <button onclick="sortByRecommended()">⭐ おすすめ順</button>
+</div>
+</center>
+
+<div id="registerForm">
+<h2>ゲーム登録</h2>
+<input type="text" id="name" placeholder="ゲーム名">
+<input type="text" id="image" placeholder="画像URL">
+<textarea id="desc" placeholder="説明（2行）"></textarea>
+<input type="text" id="url" placeholder="ゲームURL">
+<button onclick="addGame()">登録する</button>
+</div>
+
+<div class="container" id="gameContainer"></div>
+<div id="noResult" class="message"></div>
+
+<script>
+let games = JSON.parse(localStorage.getItem("games")) || [];
+
+// 保存関数
+function saveGames(){ localStorage.setItem("games", JSON.stringify(games)); }
+
+// ゲーム表示
+function renderGames(list){
+    const container = document.getElementById("gameContainer");
+    const message = document.getElementById("noResult");
+    container.innerHTML="";
+    message.innerHTML="";
+
+    if(list.length === 0){
+        message.innerHTML="申し訳ありませんが、該当するゲームは見つかりませんでした。";
+        return;
+    }
+
+    list.forEach((game,index)=>{
+        container.innerHTML += `
+        <div class="game-card">
+            <img src="${game.image}">
+            <div class="game-info">
+                <div class="game-title">${game.name}</div>
+                <div class="game-desc">${game.desc}</div>
+            </div>
+            <a href="${game.url}" class="play-button" target="_blank">▶ プレイする</a>
+            <button class="like-btn" onclick="likeGame(${index})">❤️ ${game.likes}</button>
+            <button class="delete-btn" onclick="deleteGame(${index})">削除</button>
+            <button class="recommend-btn" onclick="toggleRecommend(${index})">${game.recommended?'★':'☆'}</button>
+        </div>
+        `;
+    });
+}
+
+// ゲーム追加
+function addGame(){
+    const name = document.getElementById("name").value;
+    const image = document.getElementById("image").value;
+    const desc = document.getElementById("desc").value;
+    const url = document.getElementById("url").value;
+    if(!name || !image || !desc || !url){ alert("すべて入力してください！"); return; }
+
+    games.unshift({name,image,desc,url,likes:0,recommended:false});
+    saveGames();
+    renderGames(games);
+    toggleRegister();
+}
+
+// 登録フォーム表示
+function toggleRegister(){
+    const form = document.getElementById("registerForm");
+    form.style.display = form.style.display === "none" ? "block" : "none";
+}
+
+// 検索
+function searchGame(){
+    const word = document.getElementById("searchBar").value.toLowerCase();
+    const filtered = games.filter(g =>
+        g.name.toLowerCase().includes(word) ||
+        g.desc.toLowerCase().includes(word)
+    );
+    renderGames(filtered);
+}
+
+// いいね
+function likeGame(index){
+    games[index].likes++;
+    saveGames();
+    renderGames(games);
+}
+
+// 削除
+function deleteGame(index){
+    if(confirm(`${games[index].name} を削除しますか？`)){
+        games.splice(index,1);
+        saveGames();
+        renderGames(games);
+    }
+}
+
+// おすすめ切替
+function toggleRecommend(index){
+    games[index].recommended = !games[index].recommended;
+    saveGames();
+    renderGames(games);
+}
+
+// ランキング順
+function sortByLikes(){
+    const sorted = [...games].sort((a,b)=>b.likes - a.likes);
+    renderGames(sorted);
+}
+
+// おすすめ順
+function sortByRecommended(){
+    const sorted = [...games].sort((a,b)=>b.recommended - a.recommended);
+    renderGames(sorted);
+}
+
+// 初回表示
+renderGames(games);
+</script>
+
+</body>
+</html>
